@@ -120,4 +120,6 @@ def extract_risk_indicators(features, probability):
     return indicators
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Update this line at the bottom of your app.py
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
