@@ -1,12 +1,51 @@
-/* Additional custom styles */
-.email-box {
-    font-family: 'Courier New', monospace;
+/* Custom styling for email phishing detector */
+
+/* Suspicious phrase highlighting */
+.suspicious-highlight {
+    background-color: rgba(244, 63, 94, 0.2);
+    border-bottom: 2px solid #f43f5e;
+    padding: 0 2px;
+    border-radius: 2px;
 }
 
-.result-card {
-    transition: transform 0.3s ease;
+/* Email content styling */
+.email-content {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    white-space: pre-line;
 }
 
-.result-card:hover {
-    transform: translateY(-5px);
+/* Animation for suspicious elements */
+@keyframes pulse {
+    0% { background-color: rgba(244, 63, 94, 0.1); }
+    50% { background-color: rgba(244, 63, 94, 0.3); }
+    100% { background-color: rgba(244, 63, 94, 0.1); }
+}
+
+.suspicious-highlight {
+    animation: pulse 2s infinite;
+}
+
+/* Improvements for file upload box */
+input[type="file"]::-webkit-file-upload-button {
+    cursor: pointer;
+}
+
+/* Additional responsive improvements */
+@media (max-width: 640px) {
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
+
+/* Threat level badges */
+.threat-high {
+    background-color: #ef4444;
+}
+.threat-medium {
+    background-color: #f59e0b;
+}
+.threat-low {
+    background-color: #3b82f6;
 }

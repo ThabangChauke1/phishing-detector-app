@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation - Email Phishing Detector</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <header class="text-center mb-10">
+            <h1 class="text-3xl font-bold text-blue-700">Email Phishing Detector API</h1>
+            <p class="text-gray-600 mt-2">Documentation for developers</p>
+            <a href="/" class="mt-2 inline-block text-blue-600 hover:underline">← Back to main interface</a>
+        </header>
+
+        <main>
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">API Endpoints</h2>
+                
+                <div class="mb-6">
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">POST /api/predict</h3>
+                    <p class="text-gray-600 mb-4">Analyze an email for phishing content</p>
+                    
+                    <div class="mb-4">
+                        <h4 class="font-medium text-gray-700 mb-2">Request Body</h4>
+                        <div class="bg-gray-100 p-4 rounded-md">
+                            <pre id="api-usage"><code>{
+  "email_text": "Email content to analyze"
+}</code></pre>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-gray-700 mb-2">Response</h4>
+                        <div class="bg-gray-100 p-4 rounded-md">
+                            <pre><code>{
+  "prediction": "Phishing",
+  "probability": 87.65,
+  "threat_level": "High",
+  "action": "Block",
+  "indicators": [
+    {
+      "name": "Suspicious Phrases",
+      "description": "Contains 3 suspicious phrases",
+      "severity": "high"
+    },
+    ...
+  ],
+  "suspicious_count": 5
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">Example Usage</h3>
+                    <div class="bg-gray-100 p-4 rounded-md">
+                        <pre><code>curl -X POST https://your-app-url/api/predict \
+     -H "Content-Type: application/json" \
+     -d '{"email_text": "Dear customer, your account needs to be verified. Click here: http://bit.ly/suspicious-link"}'</code></pre>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Response Fields</h2>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Field</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">prediction</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">string</td>
+                                <td class="px-6 py-4 text-sm text-gray-500">"Phishing" or "Legitimate"</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">probability</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">number</td>
+                                <td class="px-6 py-4 text-sm text-gray-500">Confidence percentage (0-100)</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">threat_level</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">string</td>
+                                <td class="px-6 py-4 text-sm text-gray-500">"High", "Medium", or "Low"</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">action</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">string</td>
+                                <td class="px-6 py-4 text-sm text-gray-500">Recommended action to take</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">indicators</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">array</td>
+                                <td class="px-6 py-4 text-sm text-gray-500">List of detected risk indicators</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">suspicious_count</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">number</td>
+                                <td class="px-6 py-4 text-sm text-gray-500">Count of suspicious elements found</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Rate Limits & Usage</h2>
+                <p class="text-gray-600 mb-4">Please observe these guidelines when using our API:</p>
+                <ul class="list-disc pl-5 space-y-2 text-gray-600">
+                    <li>Maximum 100 requests per hour</li>
+                    <li>Maximum email size: 1 MB</li>
+                    <li>Please include your application name in User-Agent header</li>
+                    <li>For higher limits, please contact us</li>
+                </ul>
+            </div>
+        </main>
+        
+        <footer class="mt-12 text-center text-gray-500">
+            <p>&copy; 2023 Email Phishing Detector</p>
+        </footer>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

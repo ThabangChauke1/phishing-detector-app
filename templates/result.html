@@ -9,42 +9,108 @@
 </head>
 <body class="bg-gray-50">
     <div class="container mx-auto px-4 py-8 max-w-4xl">
-        <header class="text-center mb-10">
+        <header class="text-center mb-8">
             <h1 class="text-3xl font-bold text-blue-700">Email Analysis Result</h1>
-            <p class="text-gray-600 mt-2">Here's what we found about your email</p>
+            <p class="text-gray-600 mt-2">AI-powered phishing detection analysis</p>
         </header>
 
         <main>
-            <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden mb-8">
                 <!-- Result Header with color based on prediction -->
                 <div class="p-6 {% if result.prediction == 'Phishing' %}bg-red-600{% else %}bg-green-600{% endif %} text-white">
                     <div class="flex justify-between items-center">
                         <h2 class="text-2xl font-bold">{{ result.prediction }}</h2>
                         <span class="text-xl font-semibold">{{ result.probability }}% confidence</span>
                     </div>
-                    <p class="mt-2">Threat Level: {{ result.threat_level }}</p>
-                    <p class="font-semibold">Recommended Action: {{ result.action }}</p>
+                    <div class="mt-2 flex justify-between items-center">
+                        <p>Threat Level: <span class="font-semibold">{{ result.threat_level }}</span></p>
+                        <p class="font-semibold">Recommended Action: {{ result.action }}</p>
+                    </div>
                 </div>
                 
                 <!-- Risk Indicators -->
                 <div class="p-6 border-b">
-                    <h3 class="text-lg font-semibold text-gray-700 mb-3">Risk Indicators</h3>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-4">Risk Indicators</h3>
                     {% if result.indicators %}
-                        <ul class="list-disc pl-5 space-y-1">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {% for indicator in result.indicators %}
-                            <li class="text-gray-700">{{ indicator }}</li>
+                            <div class="flex p-3 rounded-md border 
+                                {% if indicator.severity == 'high' %}bg-red-50 border-red-200
+                                {% elif indicator.severity == 'medium' %}bg-yellow-50 border-yellow-200
+                                {% else %}bg-blue-50 border-blue-200{% endif %}">
+                                <div class="flex-shrink-0 mr-3">
+                                    <div class="w-10 h-10 rounded-full flex items-center justify-center
+                                        {% if indicator.severity == 'high' %}bg-red-100 text-red-500
+                                        {% elif indicator.severity == 'medium' %}bg-yellow-100 text-yellow-600
+                                        {% else %}bg-blue-100 text-blue-500{% endif %}">
+                                        {% if indicator.severity == 'high' %}
+                                            <!-- Alert icon -->
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                            </svg>
+                                        {% elif indicator.severity == 'medium' %}
+                                            <!-- Warning icon -->
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                        {% else %}
+                                            <!-- Info icon -->
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold 
+                                        {% if indicator.severity == 'high' %}text-red-700
+                                        {% elif indicator.severity == 'medium' %}text-yellow-700
+                                        {% else %}text-blue-700{% endif %}">
+                                        {{ indicator.name }}
+                                    </h4>
+                                    <p class="text-sm text-gray-600">{{ indicator.description }}</p>
+                                </div>
+                            </div>
                         {% endfor %}
-                        </ul>
+                        </div>
                     {% else %}
                         <p class="text-gray-600">No significant risk indicators detected.</p>
                     {% endif %}
                 </div>
                 
-                <!-- Email Preview -->
+                <!-- Model Explanation -->
+                {% if result.top_features %}
+                <div class="p-6 border-b">
+                    <h3 class="text-xl font-semibold text-gray-700 mb-4">Model Explanation</h3>
+                    <p class="text-gray-600 mb-4">These features had the most influence on the prediction:</p>
+                    <div class="space-y-3">
+                        {% for feature in result.top_features %}
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-sm font-medium text-gray-700">{{ feature.name }}</span>
+                                <span class="text-sm text-gray-500">{{ (feature.importance * 100) | round(1) }}%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ (feature.importance * 100) | round(1) }}%"></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Email Preview with Highlighting -->
                 <div class="p-6">
-                    <h3 class="text-lg font-semibold text-gray-700 mb-3">Email Preview</h3>
-                    <div class="bg-gray-100 p-4 rounded-md">
-                        <p class="text-gray-800 whitespace-pre-line">{{ email_snippet }}</p>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-4">Email Content Analysis</h3>
+                    <p class="text-gray-600 mb-3">
+                        {% if result.suspicious_count > 0 %}
+                            <span class="font-medium text-red-600">{{ result.suspicious_count }} suspicious elements</span> highlighted below:
+                        {% else %}
+                            No suspicious elements detected in content.
+                        {% endif %}
+                    </p>
+                    <div class="bg-gray-50 p-4 rounded-md border border-gray-300 overflow-auto max-h-96">
+                        <div class="email-content">{{ result.highlighted_text | safe }}</div>
                     </div>
                 </div>
                 
@@ -56,10 +122,15 @@
                 </div>
             </div>
             
-            <div class="mt-10 text-center">
-                <p class="text-gray-600">
-                    Remember: This is an automated analysis and should be used as a guide. Always use your judgment when dealing with suspicious emails.
-                </p>
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h3 class="text-xl font-semibold text-gray-700 mb-3">How to Stay Safe</h3>
+                <ul class="list-disc pl-5 space-y-2 text-gray-600">
+                    <li>Never click on suspicious links or download attachments from unknown senders</li>
+                    <li>Be wary of emails requesting personal information or urgent actions</li>
+                    <li>Check sender email addresses carefully - phishers often use similar domains</li>
+                    <li>When in doubt, contact the supposed sender through official channels</li>
+                    <li>Keep your security software and browsers updated</li>
+                </ul>
             </div>
         </main>
         
