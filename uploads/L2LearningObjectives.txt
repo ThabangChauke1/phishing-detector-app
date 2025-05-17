@@ -1,0 +1,8 @@
+Learning Objectives
+After studying this chapter, you should be able to:
+◆Understand the process involved in IT security management.
+◆Describe an organization’s IT security objectives, strategies, and policies.
+◆Detail some alternative approaches to IT security risk assessment.
+◆Detail steps required in a formal IT security risk assessment.
+◆Characterize identified threats and consequences to determine risk.
+◆Detail risk treatment alternatives.

@@ -1,35 +1,101 @@
 // Main JavaScript for the Email Phishing Detector
 
 document.addEventListener('DOMContentLoaded', function() {
-    // File upload preview
+    // Get DOM elements upfront
+    const form = document.querySelector('form');
     const fileInput = document.getElementById('email_file');
     const emailTextarea = document.getElementById('email_text');
+    const submitButton = document.querySelector('button[type="submit"]');
     
+    // File upload handling
     if(fileInput && emailTextarea) {
         fileInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if(!file) return;
+            
+            // File size validation - 5MB limit
+            const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+            if(file.size > maxSize) {
+                // Create error message for file size
+                const sizeErrorMsg = document.createElement('div');
+                sizeErrorMsg.classList.add('mt-2', 'text-red-600', 'text-sm');
+                sizeErrorMsg.textContent = 'File is too large. Maximum size is 5MB.';
+                
+                // Remove any existing error message
+                const existingError = fileInput.parentNode.parentNode.querySelector('.text-red-600');
+                if(existingError) {
+                    existingError.remove();
+                }
+                
+                fileInput.parentNode.parentNode.appendChild(sizeErrorMsg);
+                fileInput.value = ''; // Clear the file input
+                return;
+            }
+            
+            // Validate file type
+            const validTypes = ['text/plain', 'message/rfc822'];
+            const isValidExtension = file.name.endsWith('.eml') || file.name.endsWith('.txt');
+            
+            if(!validTypes.includes(file.type) && !isValidExtension) {
+                // Create error message for file type
+                const typeErrorMsg = document.createElement('div');
+                typeErrorMsg.classList.add('mt-2', 'text-red-600', 'text-sm');
+                typeErrorMsg.textContent = 'Invalid file type. Please upload a .txt or .eml file.';
+                
+                // Remove any existing error message
+                const existingError = fileInput.parentNode.parentNode.querySelector('.text-red-600');
+                if(existingError) {
+                    existingError.remove();
+                }
+                
+                fileInput.parentNode.parentNode.appendChild(typeErrorMsg);
+                fileInput.value = ''; // Clear the file input
+                return;
+            }
             
             // Show file name in the interface
             const fileNameDisplay = document.createElement('div');
             fileNameDisplay.classList.add('mt-2', 'text-sm', 'text-gray-600');
             fileNameDisplay.textContent = `Selected file: ${file.name}`;
             
+            // Remove any existing file name display
+            const existingDisplay = fileInput.parentNode.parentNode.querySelector('.text-sm.text-gray-600');
+            if(existingDisplay) {
+                existingDisplay.remove();
+            }
+            
             // Add the file name display after the file input
             fileInput.parentNode.parentNode.appendChild(fileNameDisplay);
             
             // If it's a text file, read and display in the textarea
-            if(file.type === 'text/plain' || file.name.endsWith('.eml')) {
+            if(file.type === 'text/plain' || file.name.endsWith('.eml') || file.name.endsWith('.txt')) {
                 const reader = new FileReader();
+                
                 reader.onload = function(e) {
                     emailTextarea.value = e.target.result;
                 };
+                
+                reader.onerror = function() {
+                    // Create error message for file reading error
+                    const readErrorMsg = document.createElement('div');
+                    readErrorMsg.classList.add('mt-2', 'text-red-600', 'text-sm');
+                    readErrorMsg.textContent = 'Error reading file. Please try again or paste content directly.';
+                    
+                    // Remove any existing error message
+                    const existingError = fileInput.parentNode.parentNode.querySelector('.text-red-600');
+                    if(existingError) {
+                        existingError.remove();
+                    }
+                    
+                    fileInput.parentNode.parentNode.appendChild(readErrorMsg);
+                };
+                
                 reader.readAsText(file);
             }
         });
     }
     
-    // Character counter for textarea
+    // Character counter for textarea with improved validation feedback
     if(emailTextarea) {
         const maxLength = 50000;
         
@@ -38,17 +104,22 @@ document.addEventListener('DOMContentLoaded', function() {
         counter.classList.add('text-xs', 'text-gray-500', 'text-right', 'mt-1');
         emailTextarea.parentNode.appendChild(counter);
         
-        // Update counter
+        // Update counter with validation feedback
         function updateCounter() {
             const remaining = maxLength - emailTextarea.value.length;
-            counter.textContent = `${emailTextarea.value.length} / ${maxLength} characters`;
             
-            if(remaining < 1000) {
+            if(emailTextarea.value.length === 0) {
+                counter.textContent = 'Enter email content or upload a file';
+                counter.classList.add('text-blue-500');
+                counter.classList.remove('text-gray-500', 'text-red-500');
+            } else if(remaining < 1000) {
+                counter.textContent = `${emailTextarea.value.length} / ${maxLength} characters (${remaining} remaining)`;
                 counter.classList.add('text-red-500');
-                counter.classList.remove('text-gray-500');
+                counter.classList.remove('text-gray-500', 'text-blue-500');
             } else {
+                counter.textContent = `${emailTextarea.value.length} / ${maxLength} characters`;
                 counter.classList.add('text-gray-500');
-                counter.classList.remove('text-red-500');
+                counter.classList.remove('text-red-500', 'text-blue-500');
             }
         }
         
@@ -62,11 +133,40 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Handle form submission with loading state
-    const form = document.querySelector('form');
+    // Handle form submission with COMBINED validation and loading state
     if(form) {
-        form.addEventListener('submit', function() {
-            // Create and show loading overlay
+        form.addEventListener('submit', function(e) {
+            // Validation: Check if both textarea is empty and no file is selected
+            if(emailTextarea && emailTextarea.value.trim() === '' && 
+               (!fileInput || !fileInput.files || fileInput.files.length === 0)) {
+                
+                e.preventDefault(); // Prevent form submission
+                
+                // Show error message
+                const errorDiv = document.createElement('div');
+                errorDiv.classList.add('bg-red-100', 'border', 'border-red-400', 'text-red-700', 'px-4', 'py-3', 'rounded', 'relative', 'mb-4');
+                errorDiv.innerHTML = '<span class="block sm:inline">Please provide email content or upload a file for analysis.</span>';
+                
+                // Remove any existing error message
+                const existingError = form.querySelector('.bg-red-100');
+                if(existingError) {
+                    existingError.remove();
+                }
+                
+                // Add error at the top of the form
+                form.insertBefore(errorDiv, form.firstChild);
+                
+                // Remove error after 5 seconds
+                setTimeout(() => {
+                    if(errorDiv.parentNode) {
+                        errorDiv.remove();
+                    }
+                }, 5000);
+                
+                return false;
+            }
+            
+            // If validation passes, show loading overlay
             const loadingOverlay = document.createElement('div');
             loadingOverlay.classList.add('fixed', 'inset-0', 'bg-black', 'bg-opacity-50', 'flex', 'items-center', 'justify-center', 'z-50');
             loadingOverlay.innerHTML = `
@@ -79,6 +179,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // The rest of your code remains unchanged...
     // Generate tooltips for highlighted elements
     const highlightedElements = document.querySelectorAll('.suspicious-highlight, .suspicious-url-highlight, .url-highlight, .email-highlight, .suspicious-email-highlight, .urgent-highlight, .financial-highlight');
     
@@ -94,6 +195,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
     
     // Create highlight legend if there are highlights
     if(highlightedElements.length > 0) {
