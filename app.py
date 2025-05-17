@@ -95,10 +95,10 @@ def extract_email_features(text):
     return features, suspicious_phrases
 
 def find_suspicious_phrases(text, suspicious_phrases):
-    """Find instances of suspicious phrases in the text for highlighting"""
-    highlighted_text = text
+    """Find instances of suspicious phrases and elements in the text for highlighting"""
     suspicious_instances = []
     
+    # Check for suspicious phrases from our list
     for phrase in suspicious_phrases:
         # Convert regex pattern to something we can search for
         search_phrase = phrase.replace('.*', '.{0,20}')
@@ -109,23 +109,95 @@ def find_suspicious_phrases(text, suspicious_phrases):
             suspicious_instances.append({
                 'phrase': match.group(),
                 'start': start,
-                'end': end
+                'end': end,
+                'type': 'suspicious_phrase',
+                'description': f'Common phishing phrase pattern: "{phrase}"'
             })
+    
+    # Find and mark URLs
+    for match in re.finditer(r'(https?://\S+|www\.\S+)', text):
+        start, end = match.span()
+        url = match.group()
+        url_type = 'suspicious_url' if re.search(r'bit\.ly|tinyurl|goo\.gl', url.lower()) else 'url'
+        description = 'Shortened URL (often used to hide malicious destinations)' if url_type == 'suspicious_url' else 'URL in email'
+        
+        suspicious_instances.append({
+            'phrase': url,
+            'start': start,
+            'end': end,
+            'type': url_type,
+            'description': description
+        })
+    
+    # Find and mark email addresses
+    for match in re.finditer(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', text):
+        start, end = match.span()
+        email = match.group()
+        
+        # Check if domain seems suspicious (non-standard TLD or mismatched brand)
+        is_suspicious = re.search(r'\.(xyz|info|top|club|pw|tk)$', email.lower()) is not None
+        email_type = 'suspicious_email' if is_suspicious else 'email'
+        description = 'Email with suspicious domain' if is_suspicious else 'Email address'
+        
+        suspicious_instances.append({
+            'phrase': email,
+            'start': start,
+            'end': end,
+            'type': email_type,
+            'description': description
+        })
+    
+    # Find and mark urgent language
+    urgent_words = ['urgent', 'immediate', 'alert', 'warning', 'attention', 'important', 'critical']
+    for word in urgent_words:
+        for match in re.finditer(r'\b' + word + r'\b', text, re.IGNORECASE):
+            start, end = match.span()
+            suspicious_instances.append({
+                'phrase': match.group(),
+                'start': start,
+                'end': end,
+                'type': 'urgent_language',
+                'description': 'Urgency language often used to pressure recipients'
+            })
+    
+    # Find and mark money/financial references
+    for match in re.finditer(r'(\$\d+|\d+\s*dollars|payment|account|bank|credit|debit|card)', text, re.IGNORECASE):
+        start, end = match.span()
+        suspicious_instances.append({
+            'phrase': match.group(),
+            'start': start,
+            'end': end,
+            'type': 'financial',
+            'description': 'Financial terms often used in phishing to create concern'
+        })
     
     return suspicious_instances
 
 def highlight_suspicious_content(text, suspicious_instances):
-    """Generate HTML with highlighted suspicious content"""
+    """Generate HTML with highlighted suspicious content with different colors by type"""
     # Sort instances by start position (reversed to avoid index issues when inserting HTML)
     suspicious_instances.sort(key=lambda x: x['start'], reverse=True)
     
     # Convert text to HTML-safe
     html_text = text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
     
-    # Insert highlighting tags
+    # Define CSS classes for different types
+    type_classes = {
+        'suspicious_phrase': 'suspicious-highlight',
+        'suspicious_url': 'suspicious-url-highlight',
+        'url': 'url-highlight',
+        'suspicious_email': 'suspicious-email-highlight',
+        'email': 'email-highlight',
+        'urgent_language': 'urgent-highlight',
+        'financial': 'financial-highlight'
+    }
+    
+    # Insert highlighting tags with specific classes and data attributes for tooltips
     for instance in suspicious_instances:
         start, end = instance['start'], instance['end']
-        html_text = html_text[:start] + f'<span class="suspicious-highlight">{html_text[start:end]}</span>' + html_text[end:]
+        highlight_class = type_classes.get(instance['type'], 'suspicious-highlight')
+        
+        html_text = html_text[:start] + f'<span class="{highlight_class}" data-description="{instance["description"]}">{html_text[start:end]}</span>' + html_text[end:]
     
     # Convert newlines to <br> tags
     html_text = html_text.replace('\n', '<br>')
@@ -133,61 +205,93 @@ def highlight_suspicious_content(text, suspicious_instances):
     return html_text
 
 def extract_risk_indicators(features, probability):
-    """Extract key risk indicators to explain the prediction"""
+    """Extract key risk indicators to explain the prediction with detailed descriptions"""
     indicators = []
     
+    # Check for URLs
     if features.get('url_count', 0) > 0:
+        severity = 'high' if features['url_count'] > 2 else 'medium'
         indicators.append({
             'name': 'URLs',
             'description': f"Contains {features['url_count']} URLs",
-            'severity': 'high' if features['url_count'] > 2 else 'medium'
+            'explanation': "Phishing emails often contain links to fake websites. Multiple URLs can indicate an attempt to direct you to a malicious site.",
+            'severity': severity
         })
     
+    # Check for shortened URLs
     if features.get('suspicious_url', 0) > 0:
         indicators.append({
             'name': 'Shortened URLs',
             'description': "Contains suspicious shortened URLs",
+            'explanation': "URL shorteners (like bit.ly) hide the actual destination, making it easier to disguise malicious websites.",
             'severity': 'high'
         })
     
-    if features.get('urgent_words', 0) > 1:
+    # Check for urgent language
+    if features.get('urgent_words', 0) > 0:
+        severity = 'high' if features['urgent_words'] > 2 else 'medium'
         indicators.append({
             'name': 'Urgency',
-            'description': "Uses urgent language",
-            'severity': 'medium'
+            'description': f"Uses urgent language ({features['urgent_words']} instances)",
+            'explanation': "Creating a false sense of urgency is a common social engineering tactic to push recipients into acting without thinking.",
+            'severity': severity
         })
     
+    # Check for money references
     if features.get('money_references', 0) > 0:
         indicators.append({
             'name': 'Financial',
             'description': "References money or payment",
+            'explanation': "References to financial terms often aim to trigger concern about money, making you more likely to act hastily.",
             'severity': 'medium'
         })
     
+    # Check email length
     if features.get('text_length', 0) < 100:
         indicators.append({
             'name': 'Short Email',
             'description': "Unusually short email",
+            'explanation': "Very short emails with links are suspicious as they provide minimal context, focusing on getting you to click.",
+            'severity': 'medium'
+        })
+    elif features.get('text_length', 0) > 3000:
+        indicators.append({
+            'name': 'Long Email',
+            'description': "Unusually long email",
+            'explanation': "Extremely long emails can be attempts to overwhelm with information or hide suspicious content in a lot of text.",
             'severity': 'low'
         })
     
+    # Check suspicious phrases
     suspicious_count = sum(1 for k, v in features.items() if 'suspicious_phrase' in k and v > 0)
     if suspicious_count > 0:
+        severity = 'high' if suspicious_count > 2 else 'medium'
         indicators.append({
             'name': 'Suspicious Phrases',
             'description': f"Contains {suspicious_count} suspicious phrases",
-            'severity': 'high' if suspicious_count > 2 else 'medium'
+            'explanation': "Certain phrase patterns are commonly used in phishing, such as 'verify your account' or 'unusual activity'.",
+            'severity': severity
         })
     
+    # Check exclamation marks
     if features.get('exclamation_count', 0) > 3:
         indicators.append({
             'name': 'Exclamations',
             'description': f"Contains {features['exclamation_count']} exclamation marks",
+            'explanation': "Excessive exclamation marks often indicate attempts to create emotional responses or urgency.",
+            'severity': 'medium'
+        })
+    
+    # Check for attachment references
+    if re.search(r'attach|file|document|pdf|doc|docx|xls|xlsx|zip', str(features)):
+        indicators.append({
+            'name': 'Attachment References',
+            'description': "References to attachments or files",
+            'explanation': "Emails mentioning attachments without actual attachments may be trying to get you to click links to 'view' these non-existent files.",
             'severity': 'medium'
         })
     
     return indicators
-
 def analyze_email(email_text):
     # Clean text
     cleaned_text = clean_text(email_text)
@@ -248,6 +352,32 @@ def analyze_email(email_text):
                     'importance': float(feature_importance[idx])
                 })
     
+    # Add feature explanations for better interpretability
+    feature_explanations = {
+        'text_length': 'Total length of the email text. Very short emails are often suspicious.',
+        'text_length_log': 'Mathematical transformation of text length to better handle variations.',
+        'url_count': 'Number of URLs in the email. Phishing emails often contain links to fake websites.',
+        'suspicious_url': 'URLs using shorteners (bit.ly, etc.) which can disguise malicious destinations.',
+        'email_count': 'Number of email addresses found in the content.',
+        'money_references': 'Mentions of money, payments, accounts, or financial terms.',
+        'click_references': 'Instructions to click links or buttons, common in phishing.',
+        'urgent_words': 'Words conveying urgency or time pressure to force hasty actions.',
+        'exclamation_count': 'Excessive punctuation often indicates attempts to create emotional responses.'
+    }
+    
+    # Add explanations to top features
+    for feature in top_features:
+        if feature['name'] in feature_explanations:
+            feature['explanation'] = feature_explanations[feature['name']]
+    
+    # Categorize highlighted elements for presentation
+    highlighted_elements = {
+        "urls": [i['phrase'] for i in suspicious_instances if i.get('type') == 'url' or i.get('type') == 'suspicious_url'],
+        "suspicious_phrases": [i['phrase'] for i in suspicious_instances if i.get('type') == 'suspicious_phrase'],
+        "urgent_language": [i['phrase'] for i in suspicious_instances if i.get('type') == 'urgent_language'],
+        "financial_terms": [i['phrase'] for i in suspicious_instances if i.get('type') == 'financial']
+    }
+    
     return {
         "prediction": "Phishing" if prediction == 1 else "Legitimate",
         "probability": round(probability * 100, 2),
@@ -256,7 +386,8 @@ def analyze_email(email_text):
         "indicators": indicators,
         "highlighted_text": highlighted_text,
         "suspicious_count": len(suspicious_instances),
-        "top_features": top_features
+        "top_features": top_features,
+        "highlighted_elements": highlighted_elements
     }
 
 @app.route('/')
@@ -314,6 +445,56 @@ def api_predict():
 @app.route('/api')
 def api_docs():
     return render_template('api.html')
+
+def get_feature_explanations():
+    """Provide explanations for technical features used in the model"""
+    return {
+        'text_length': {
+            'name': 'Text Length',
+            'description': 'The total number of characters in the email',
+            'significance': 'Very short emails are often suspicious, while legitimate business emails tend to have moderate length'
+        },
+        'text_length_log': {
+            'name': 'Log-transformed Text Length',
+            'description': 'Mathematical transformation of text length to reduce the impact of outliers',
+            'significance': 'Helps the model handle both very short and very long emails more effectively'
+        },
+        'url_count': {
+            'name': 'URL Count',
+            'description': 'Number of web links found in the email',
+            'significance': 'Phishing emails often contain links to fake websites'
+        },
+        'suspicious_url': {
+            'name': 'Suspicious URL Count',
+            'description': 'Number of shortened or suspicious URLs',
+            'significance': 'URL shorteners are frequently used to hide malicious destinations'
+        },
+        'email_count': {
+            'name': 'Email Address Count',
+            'description': 'Number of email addresses found in the content',
+            'significance': 'Multiple email addresses or mismatched addresses can indicate spoofing'
+        },
+        'money_references': {
+            'name': 'Financial References',
+            'description': 'Mentions of money, payments, accounts, or financial terms',
+            'significance': 'Phishing often targets financial concerns to create urgency'
+        },
+        'click_references': {
+            'name': 'Click References',
+            'description': 'Instructions to click links or buttons',
+            'significance': 'Pushing users to click is a common phishing tactic'
+        },
+        'urgent_words': {
+            'name': 'Urgency Language',
+            'description': 'Words conveying urgency or time pressure',
+            'significance': 'Creates pressure to act without thinking'
+        },
+        'exclamation_count': {
+            'name': 'Exclamation Marks',
+            'description': 'Number of exclamation points in the email',
+            'significance': 'Excessive punctuation often indicates attempts to create emotional responses'
+        },
+    }
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

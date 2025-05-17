@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
             fileInput.parentNode.parentNode.appendChild(fileNameDisplay);
             
             // If it's a text file, read and display in the textarea
-            if(file.type === 'text/plain') {
+            if(file.type === 'text/plain' || file.name.endsWith('.eml')) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     emailTextarea.value = e.target.result;
@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function() {
             loadingOverlay.classList.add('fixed', 'inset-0', 'bg-black', 'bg-opacity-50', 'flex', 'items-center', 'justify-center', 'z-50');
             loadingOverlay.innerHTML = `
                 <div class="bg-white p-8 rounded-lg shadow-lg text-center">
-                    <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
+                    <div class="spinner mx-auto"></div>
                     <p class="mt-4 text-gray-700 font-medium">Analyzing email...</p>
                 </div>
             `;
@@ -79,24 +79,55 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Tooltips for risk indicators (on results page)
-    const riskIndicators = document.querySelectorAll('.risk-indicator');
-    if(riskIndicators.length > 0) {
-        riskIndicators.forEach(indicator => {
-            indicator.addEventListener('mouseenter', function() {
-                const tooltip = this.querySelector('.tooltip');
-                if(tooltip) {
-                    tooltip.classList.remove('hidden');
+    // Generate tooltips for highlighted elements
+    const highlightedElements = document.querySelectorAll('.suspicious-highlight, .suspicious-url-highlight, .url-highlight, .email-highlight, .suspicious-email-highlight, .urgent-highlight, .financial-highlight');
+    
+    if(highlightedElements.length > 0) {
+        highlightedElements.forEach(element => {
+            // Create tooltip if it has a description
+            const description = element.getAttribute('data-description');
+            if(description) {
+                const tooltip = document.createElement('div');
+                tooltip.classList.add('highlight-tooltip');
+                tooltip.textContent = description;
+                element.appendChild(tooltip);
+            }
+        });
+    }
+    
+    // Create highlight legend if there are highlights
+    if(highlightedElements.length > 0) {
+        const emailContent = document.querySelector('.email-content');
+        if(emailContent) {
+            const legend = document.createElement('div');
+            legend.classList.add('highlight-legend');
+            
+            // Define legend items based on what's in the email
+            const legendItems = [
+                { class: 'suspicious-highlight', color: 'legend-suspicious', label: 'Suspicious Phrase' },
+                { class: 'url-highlight', color: 'legend-url', label: 'URL' },
+                { class: 'suspicious-url-highlight', color: 'legend-suspicious-url', label: 'Suspicious URL' },
+                { class: 'email-highlight', color: 'legend-email', label: 'Email Address' },
+                { class: 'urgent-highlight', color: 'legend-urgent', label: 'Urgent Language' },
+                { class: 'financial-highlight', color: 'legend-financial', label: 'Financial Term' }
+            ];
+            
+            // Only add legend items that exist in the email
+            legendItems.forEach(item => {
+                if(document.querySelector(`.${item.class}`)) {
+                    const legendItem = document.createElement('div');
+                    legendItem.classList.add('legend-item');
+                    legendItem.innerHTML = `
+                        <div class="legend-color ${item.color}"></div>
+                        <div>${item.label}</div>
+                    `;
+                    legend.appendChild(legendItem);
                 }
             });
             
-            indicator.addEventListener('mouseleave', function() {
-                const tooltip = this.querySelector('.tooltip');
-                if(tooltip) {
-                    tooltip.classList.add('hidden');
-                }
-            });
-        });
+            // Insert legend before email content
+            emailContent.parentNode.insertBefore(legend, emailContent);
+        }
     }
     
     // Expand/collapse email content
@@ -124,68 +155,109 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Add copy button for API usage
-    const apiSection = document.getElementById('api-usage');
-    if(apiSection) {
-        const codeBlock = apiSection.querySelector('code');
-        if(codeBlock) {
-            const copyButton = document.createElement('button');
-            copyButton.classList.add('absolute', 'top-2', 'right-2', 'bg-gray-200', 'hover:bg-gray-300', 'rounded', 'p-1');
-            copyButton.innerHTML = '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"></path><path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"></path></svg>';
+    // Copy results to clipboard button
+    const resultContainer = document.querySelector('.result-container');
+    if(resultContainer) {
+        const copyButton = document.createElement('button');
+        copyButton.classList.add('mt-4', 'bg-gray-100', 'hover:bg-gray-200', 'text-gray-800', 'font-bold', 'py-2', 'px-4', 'rounded', 'inline-flex', 'items-center');
+        copyButton.innerHTML = `
+            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"></path>
+                <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"></path>
+            </svg>
+            <span>Copy Results</span>
+        `;
+        
+        copyButton.addEventListener('click', function() {
+            // Create a text summary of the results
+            const prediction = document.querySelector('h2').textContent;
+            const probability = document.querySelector('.result-summary .text-xl').textContent;
             
-            copyButton.addEventListener('click', function() {
-                navigator.clipboard.writeText(codeBlock.textContent).then(() => {
-                    copyButton.innerHTML = '<svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"></path></svg>';
-                    setTimeout(() => {
-                        copyButton.innerHTML = '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"></path><path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"></path></svg>';
-                    }, 2000);
-                });
+            let indicators = '';
+            document.querySelectorAll('.risk-indicator h4').forEach(indicator => {
+                indicators += `- ${indicator.textContent}\n`;
             });
             
-            // Add button to the code block container
-            codeBlock.parentNode.style.position = 'relative';
-            codeBlock.parentNode.appendChild(copyButton);
+            // Include highlighted elements in the summary
+            let highlightedSummary = '';
+            const highlightCategories = {
+                '.suspicious-url-highlight': 'Suspicious URLs',
+                '.url-highlight': 'URLs',
+                '.suspicious-highlight': 'Suspicious Phrases',
+                '.urgent-highlight': 'Urgent Language',
+                '.financial-highlight': 'Financial Terms'
+            };
+            
+            for(const [selector, title] of Object.entries(highlightCategories)) {
+                const elements = document.querySelectorAll(selector);
+                if(elements.length > 0) {
+                    highlightedSummary += `\n${title}:\n`;
+                    elements.forEach(el => {
+                        highlightedSummary += `- ${el.textContent.trim()}\n`;
+                    });
+                }
+            }
+            
+            const resultText = `
+Email Phishing Analysis Results:
+===============================
+Verdict: ${prediction}
+Confidence: ${probability}
+
+Risk Indicators:
+${indicators}
+${highlightedSummary}
+
+Analyzed by Email Phishing Detector
+            `.trim();
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(resultText).then(() => {
+                copyButton.innerHTML = `
+                    <svg class="w-4 h-4 mr-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"></path>
+                    </svg>
+                    <span>Copied!</span>
+                `;
+                setTimeout(() => {
+                    copyButton.innerHTML = `
+                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"></path>
+                            <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"></path>
+                        </svg>
+                        <span>Copy Results</span>
+                    `;
+                }, 2000);
+            });
+        });
+        
+        // Add the button to the result container
+        const buttonContainer = document.querySelector('.action-buttons');
+        if(buttonContainer) {
+            buttonContainer.appendChild(copyButton);
+        } else {
+            const container = document.createElement('div');
+            container.classList.add('flex', 'justify-center', 'mt-4');
+            container.appendChild(copyButton);
+            resultContainer.appendChild(container);
         }
     }
     
-    // Add loading spinner CSS
-    const style = document.createElement('style');
-    style.textContent = `
-        .lds-ring {
-            display: inline-block;
-            position: relative;
-            width: 80px;
-            height: 80px;
-        }
-        .lds-ring div {
-            box-sizing: border-box;
-            display: block;
-            position: absolute;
-            width: 64px;
-            height: 64px;
-            margin: 8px;
-            border: 8px solid #3b82f6;
-            border-radius: 50%;
-            animation: lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
-            border-color: #3b82f6 transparent transparent transparent;
-        }
-        .lds-ring div:nth-child(1) {
-            animation-delay: -0.45s;
-        }
-        .lds-ring div:nth-child(2) {
-            animation-delay: -0.3s;
-        }
-        .lds-ring div:nth-child(3) {
-            animation-delay: -0.15s;
-        }
-        @keyframes lds-ring {
-            0% {
-                transform: rotate(0deg);
-            }
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-    `;
-    document.head.appendChild(style);
+    // Feature explanation toggling
+    const featureButtons = document.querySelectorAll('.feature-explanation-toggle');
+    if(featureButtons.length > 0) {
+        featureButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const explanation = this.nextElementSibling;
+                explanation.classList.toggle('hidden');
+                
+                // Update toggle text
+                if(explanation.classList.contains('hidden')) {
+                    this.textContent = 'Show explanation';
+                } else {
+                    this.textContent = 'Hide explanation';
+                }
+            });
+        });
+    }
 });

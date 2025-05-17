@@ -1,51 +1,280 @@
-/* Custom styling for email phishing detector */
+/* ====== Email Phishing Detector Styles ====== */
 
-/* Suspicious phrase highlighting */
+/* Base styles for email content */
+.email-content {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    white-space: pre-line;
+    padding: 1rem;
+    border-radius: 0.375rem;
+    background-color: #f9fafb;
+}
+
+/* ====== Highlight Styling for Different Element Types ====== */
+
+/* General suspicious phrase highlighting */
 .suspicious-highlight {
     background-color: rgba(244, 63, 94, 0.2);
     border-bottom: 2px solid #f43f5e;
     padding: 0 2px;
     border-radius: 2px;
+    cursor: pointer;
+    position: relative;
+    animation: pulse-red 2s infinite;
 }
 
-/* Email content styling */
-.email-content {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    line-height: 1.6;
-    white-space: pre-line;
+/* URL highlighting */
+.url-highlight {
+    background-color: rgba(59, 130, 246, 0.15);
+    border-bottom: 2px solid #3b82f6;
+    padding: 0 2px;
+    border-radius: 2px;
+    cursor: pointer;
 }
 
-/* Animation for suspicious elements */
-@keyframes pulse {
+/* Suspicious URL highlighting */
+.suspicious-url-highlight {
+    background-color: rgba(249, 115, 22, 0.2);
+    border-bottom: 2px solid #f97316;
+    padding: 0 2px;
+    border-radius: 2px;
+    cursor: pointer;
+    animation: pulse-orange 2s infinite;
+}
+
+/* Email address highlighting */
+.email-highlight {
+    background-color: rgba(16, 185, 129, 0.15);
+    border-bottom: 2px solid #10b981;
+    padding: 0 2px;
+    border-radius: 2px;
+    cursor: pointer;
+}
+
+/* Suspicious email highlighting */
+.suspicious-email-highlight {
+    background-color: rgba(217, 70, 239, 0.15);
+    border-bottom: 2px solid #d946ef;
+    padding: 0 2px;
+    border-radius: 2px;
+    cursor: pointer;
+}
+
+/* Urgent language highlighting */
+.urgent-highlight {
+    background-color: rgba(234, 179, 8, 0.2);
+    border-bottom: 2px solid #eab308;
+    padding: 0 2px;
+    border-radius: 2px;
+    cursor: pointer;
+    animation: pulse-yellow 2s infinite;
+}
+
+/* Financial terms highlighting */
+.financial-highlight {
+    background-color: rgba(20, 184, 166, 0.15);
+    border-bottom: 2px solid #14b8a6;
+    padding: 0 2px;
+    border-radius: 2px;
+    cursor: pointer;
+}
+
+/* ====== Pulse Animations for Different Types ====== */
+
+/* Red pulse for suspicious phrases */
+@keyframes pulse-red {
     0% { background-color: rgba(244, 63, 94, 0.1); }
     50% { background-color: rgba(244, 63, 94, 0.3); }
     100% { background-color: rgba(244, 63, 94, 0.1); }
 }
 
-.suspicious-highlight {
-    animation: pulse 2s infinite;
+/* Orange pulse for suspicious URLs */
+@keyframes pulse-orange {
+    0% { background-color: rgba(249, 115, 22, 0.1); }
+    50% { background-color: rgba(249, 115, 22, 0.3); }
+    100% { background-color: rgba(249, 115, 22, 0.1); }
 }
 
-/* Improvements for file upload box */
-input[type="file"]::-webkit-file-upload-button {
-    cursor: pointer;
+/* Yellow pulse for urgent language */
+@keyframes pulse-yellow {
+    0% { background-color: rgba(234, 179, 8, 0.1); }
+    50% { background-color: rgba(234, 179, 8, 0.3); }
+    100% { background-color: rgba(234, 179, 8, 0.1); }
 }
 
-/* Additional responsive improvements */
+/* ====== Threat Level Styles ====== */
+
+.threat-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: white;
+    margin-right: 0.5rem;
+}
+
+.threat-high {
+    background-color: #ef4444;
+}
+
+.threat-medium {
+    background-color: #f59e0b;
+}
+
+.threat-low {
+    background-color: #3b82f6;
+}
+
+/* ====== Tooltip for highlighted elements ====== */
+
+.highlight-tooltip {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: #1f2937;
+    color: white;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    width: 200px;
+    z-index: 50;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.2s, visibility 0.2s;
+    pointer-events: none;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.suspicious-highlight:hover .highlight-tooltip,
+.suspicious-url-highlight:hover .highlight-tooltip,
+.url-highlight:hover .highlight-tooltip,
+.email-highlight:hover .highlight-tooltip,
+.suspicious-email-highlight:hover .highlight-tooltip,
+.urgent-highlight:hover .highlight-tooltip,
+.financial-highlight:hover .highlight-tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* ====== Legend for highlighted elements ====== */
+
+.highlight-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin-right: 1rem;
+}
+
+.legend-color {
+    width: 1rem;
+    height: 1rem;
+    margin-right: 0.375rem;
+    border-radius: 0.125rem;
+}
+
+.legend-suspicious { background-color: #f43f5e; }
+.legend-url { background-color: #3b82f6; }
+.legend-suspicious-url { background-color: #f97316; }
+.legend-email { background-color: #10b981; }
+.legend-urgent { background-color: #eab308; }
+.legend-financial { background-color: #14b8a6; }
+
+/* ====== Feature explanation styles ====== */
+
+.feature-explanation {
+    padding: 0.75rem;
+    border-radius: 0.375rem;
+    margin-bottom: 0.5rem;
+    background-color: #f3f4f6;
+    border-left: 4px solid #6366f1;
+}
+
+.feature-name {
+    font-weight: 600;
+    color: #4b5563;
+    margin-bottom: 0.25rem;
+}
+
+.feature-description {
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+/* ====== Responsive improvements ====== */
+
 @media (max-width: 640px) {
     .container {
         padding-left: 1rem;
         padding-right: 1rem;
     }
+    
+    .highlight-legend {
+        font-size: 0.75rem;
+    }
+    
+    .legend-color {
+        width: 0.75rem;
+        height: 0.75rem;
+    }
 }
 
-/* Threat level badges */
-.threat-high {
-    background-color: #ef4444;
+/* ====== File upload improvements ====== */
+
+.file-upload-container {
+    border: 2px dashed #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    transition: all 0.2s;
 }
-.threat-medium {
-    background-color: #f59e0b;
+
+.file-upload-container:hover {
+    border-color: #6366f1;
+    background-color: #f9fafb;
 }
-.threat-low {
-    background-color: #3b82f6;
+
+input[type="file"] {
+    display: none;
+}
+
+.file-upload-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.file-upload-icon {
+    color: #9ca3af;
+    margin-bottom: 0.5rem;
+}
+
+.file-upload-text {
+    color: #6b7280;
+    font-size: 0.875rem;
+    text-align: center;
+}
+
+/* ====== Animation for loading states ====== */
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 3px solid rgba(99, 102, 241, 0.2);
+    border-top-color: #6366f1;
+    animation: spin 1s infinite linear;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }
